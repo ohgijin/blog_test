@@ -3,26 +3,23 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>동아리 블로그 — Firebase(단일 회원가입 폼)</title>
+  <title>동아리 블로그 — Firebase (단일 폼 · 중복방지)</title>
   <style>
-    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ok:#1fbf74; --bad:#ff6363; }
+    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --accent:#8ef; --ok:#1fbf74; --bad:#ff6363; }
     *{box-sizing:border-box}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:radial-gradient(1200px 700px at 10% -10%,#1a2146 0%, var(--bg) 40%);color:var(--text)}
-    a{color:var(--accent);text-decoration:none}
     .wrap{max-width:980px;margin:0 auto;padding:24px}
     .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;background:linear-gradient(180deg,#19204a 0%,#121735 100%);border-bottom:1px solid #2a346a;position:sticky;top:0;z-index:10}
     .brand{font-weight:800;letter-spacing:.3px}
-    .pill{padding:6px 12px;border:1px solid #2a346a;border-radius:999px;color:var(--text);background:#121735}
-    .btn{padding:10px 14px;background:linear-gradient(180deg,#2a346a,#1b2351);border:1px solid #39458c;border-radius:12px;color:#eaf0ff;cursor:pointer;transition:transform .05s ease}
-    .btn:hover{transform:translateY(-1px)}
-    .btn.alt{background:transparent;border-color:#3b467f}
+    .pill{padding:6px 12px;border:1px solid #2a346a;border-radius:999px;background:#121735}
+    .btn{padding:10px 14px;background:linear-gradient(180deg,#2a346a,#1b2351);border:1px solid #39458c;border-radius:12px;color:#eaf0ff;cursor:pointer}
     .grid{display:grid;gap:16px}
     .card{background:linear-gradient(180deg,#151b3b,#0f1430);border:1px solid #28306a;border-radius:16px;box-shadow:0 12px 24px rgba(0,0,0,.35)}
     .card .hd{padding:18px 20px;border-bottom:1px solid #26306b;font-weight:700}
     .card .bd{padding:18px 20px}
     .row{display:grid;gap:10px;margin-bottom:12px}
     label{font-size:14px;color:#cfe1ff}
-    input[type="text"],input[type="email"],input[type="password"],textarea{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #34407d;background:#0d1330;color:#e8edff;outline:none}
+    input[type="text"],input[type="email"],input[type="password"],textarea{width:100%;padding:12px;border-radius:12px;border:1px solid #34407d;background:#0d1330;color:#e8edff}
     input[type="file"]{color:#cfe1ff}
     textarea{min-height:90px;resize:vertical}
     .hint{font-size:12px;color:var(--muted)}
@@ -45,13 +42,13 @@
     <div class="brand">🚀 동아리 블로그 (Firebase)</div>
     <div id="navRight" style="display:flex; gap:8px; align-items:center;">
       <span id="greet" class="pill" hidden></span>
-      <button id="btnToSignup" class="btn alt" hidden>회원가입</button>
+      <button id="btnToSignup" class="btn" hidden>회원가입</button>
       <button id="btnLogout" class="btn" hidden>로그아웃</button>
     </div>
   </header>
 
   <main class="wrap">
-    <!-- ✅ 회원가입: 단일 카드만 표시 -->
+    <!-- ✅ 회원가입: 단일 카드 -->
     <section id="page-signup" class="grid">
       <div class="card">
         <div class="hd">회원가입</div>
@@ -136,7 +133,7 @@
             <div id="loginMsg" class="hint"></div>
             <div class="row">
               <button class="btn" type="submit">로그인</button>
-              <button class="btn alt" id="backToSignup" type="button">회원가입으로</button>
+              <button class="btn" id="backToSignup" type="button">회원가입으로</button>
             </div>
           </form>
         </div>
@@ -146,461 +143,127 @@
 
   <!-- Firebase SDKs (ESM) -->
   <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
-    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js';
+    // ===== 중복 실행 방지 가드 =====
+    if (window.__BLOG_INIT__) {
+      console.warn('이미 초기화됨: 중복 스크립트 실행 방지');
+    } else {
+      window.__BLOG_INIT__ = true;
 
-    // ▶ 본인 프로젝트 구성값으로 교체하세요
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      appId: "YOUR_APP_ID"
-    };
+      // Firebase SDK import
+      const [{ initializeApp }, authMod, fsMod, stMod] = await Promise.all([
+        import('https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js'),
+        import('https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js'),
+        import('https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js'),
+        import('https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js')
+      ]);
+      const { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, signOut } = authMod;
+      const { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, getDoc, setDoc } = fsMod;
+      const { getStorage, ref: sRef, uploadBytes, getDownloadURL } = stMod;
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
+      // ▶ 본인 프로젝트 구성값으로 교체
+      const firebaseConfig = {
+        apiKey: "YOUR_API_KEY",
+        authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT_ID.appspot.com",
+        appId: "YOUR_APP_ID"
+      };
 
-    // ------- DOM helpers -------
-    const $ = (sel) => document.querySelector(sel);
-    const pageSignup = $('#page-signup');
-    const pageMain = $('#page-main');
-    const pageLogin = $('#page-login');
-    const greet = $('#greet');
-    const btnLogout = $('#btnLogout');
-    const btnToSignup = $('#btnToSignup');
+      const app = initializeApp(firebaseConfig);
+      const auth = getAuth(app);
+      const db = getFirestore(app);
+      const storage = getStorage(app);
 
-    function show(section){ [pageSignup,pageMain,pageLogin].forEach(el=>el.hidden=true); section.hidden=false; }
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
-    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now()-ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
+      // DOM helpers
+      const $ = (sel) => document.querySelector(sel);
+      const pageSignup = $('#page-signup');
+      const pageMain = $('#page-main');
+      const pageLogin = $('#page-login');
+      const greet = $('#greet');
+      const btnLogout = $('#btnLogout');
+      const btnToSignup = $('#btnToSignup');
 
-    function placeholderAvatar(name){
-      const initials=(name||'?').trim().slice(0,2).toUpperCase();
-      return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='#1a245b'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'>${initials}</text></svg>`)}`;
+      function show(section){ [pageSignup,pageMain,pageLogin].forEach(el=>el.hidden=true); section.hidden=false; }
+      function escapeHtml(s){ return (s||'').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
+      function timeAgo(ts){ if(!ts) return ''; const d=Date.now()-ts, m=60e3,h=3600e3,dv=86400e3; if(d<m) return '방금 전'; if(d<h) return Math.floor(d/m)+'분 전'; if(d<dv) return Math.floor(d/h)+'시간 전'; return Math.floor(d/dv)+'일 전'; }
+      function placeholderAvatar(name){ const i=(name||'?').trim().slice(0,2).toUpperCase(); return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='#1a245b'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'>${i}</text></svg>`)}`; }
+
+      function renderNav(user){ if(user){ greet.hidden=false; greet.textContent=`안녕하세요, ${user.displayName||'사용자'} 님!`; btnLogout.hidden=false; btnToSignup.hidden=true; } else { greet.hidden=true; btnLogout.hidden=true; btnToSignup.hidden=false; } }
+      function renderAccountBox(user){ const avatar=user.photoURL||placeholderAvatar(user.displayName||'U'); $('#accountBox').innerHTML=`<div style="display:flex; gap:12px; align-items:center;"><img src="${avatar}" style="width:56px;height:56px;border-radius:14px;border:1px solid #31407f;object-fit:cover;" /><div><div style="font-weight:800;">${escapeHtml(user.displayName||'사용자')}</div><div class="hint">${escapeHtml(user.email||'')}</div></div></div>`; }
+
+      // Auth state
+      onAuthStateChanged(auth, (user)=>{ if(user){ renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain); } else { renderNav(null); show(pageSignup); } });
+
+      // Handlers
+      async function fileToBytes(file){ if(!file) return null; const buf=await file.arrayBuffer(); return new Uint8Array(buf); }
+
+      $('#signupForm').onsubmit = async (e)=>{
+        e.preventDefault();
+        const name=$('#su_name').value.trim();
+        const email=$('#su_email').value.trim();
+        const pw=$('#su_pw').value;
+        const avatarFile=$('#su_avatar').files[0];
+        const msg=$('#signupMsg'); msg.textContent='';
+        try{
+          const { user } = await createUserWithEmailAndPassword(auth, email, pw);
+          let photoURL='';
+          if(avatarFile){ const r=sRef(storage,`avatars/${user.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytes(avatarFile)); photoURL=await getDownloadURL(r); }
+          await updateProfile(user,{ displayName:name, photoURL: photoURL||null });
+          await setDoc(doc(db,'users',user.uid),{ uid:user.uid, name, email, photoURL:photoURL||'', createdAt: serverTimestamp() });
+        }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'가입 실패')}</span>`; }
+      };
+
+      $('#loginForm').onsubmit = async (e)=>{
+        e.preventDefault();
+        const email=$('#li_email').value.trim();
+        const pw=$('#li_pw').value; const msg=$('#loginMsg'); msg.textContent='';
+        try{ await signInWithEmailAndPassword(auth,email,pw); show(pageMain); }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'로그인 실패')}</span>`; }
+      };
+
+      btnLogout.onclick = ()=>signOut(auth);
+      btnToSignup.onclick = ()=>show(pageSignup);
+      $('#backToSignup').onclick = ()=>show(pageSignup);
+
+      // Posts
+      const feedEl = document.querySelector('#feed');
+      let unsubscribeFeed = null;
+
+      function renderEmpty(){ feedEl.innerHTML='<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
+
+      function renderPosts(docs){
+        if(!docs.length){ renderEmpty(); return; }
+        feedEl.innerHTML = docs.map(d=>{ const p=d.data(); const me=auth.currentUser; const iLiked=!!(me&&p.likes&&p.likes.includes(me.uid)); const likeCount=(p.likes||[]).length; const name=p.userName||'사용자'; const ts=p.ts?.toDate? p.ts.toDate().getTime():0; return `
+          <article class="post" data-id="${d.id}">
+            <div class="meta">🧑‍🚀 <b>${escapeHtml(name)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
+            <div>${escapeHtml(p.text||'')}</div>
+            ${p.imageURL? `<img class="img" src="${p.imageURL}" alt="post"/>`:''}
+            <div class="actions"><button class="btn btn-like">${iLiked?'💖':'❤️'} <span class="like-count">${likeCount}</span></button><button class="btn btn-comment">💬 댓글</button></div>
+            <div class="comments" data-loaded="0"><div class="hint">댓글을 보려면 버튼을 눌러요.</div><div class="comment-list"></div><form class="comment-form" style="margin-top:8px;display:flex;gap:8px;"><input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" /><button class="btn" type="submit">등록</button></form></div>
+          </article>`; }).join('');
+
+        feedEl.querySelectorAll('.post').forEach(postEl=>{
+          const id=postEl.getAttribute('data-id');
+          postEl.querySelector('.btn-like').onclick=()=>toggleLike(id);
+          postEl.querySelector('.btn-comment').onclick=()=>toggleComments(id,postEl);
+          postEl.querySelector('.comment-form').onsubmit=(e)=>submitComment(e,id,postEl);
+        });
+      }
+
+      function attachFeedListener(){ if(unsubscribeFeed) unsubscribeFeed(); const q=query(collection(db,'posts'), orderBy('ts','desc')); unsubscribeFeed=onSnapshot(q, snap=>renderPosts(snap.docs)); }
+
+      async function fileToBytesOptional(file){ return file? new Uint8Array(await file.arrayBuffer()): null; }
+
+      async function createPost({ text, imageFile }){ const me=auth.currentUser; if(!me) return; let imageURL=''; if(imageFile){ const r=sRef(storage,`posts/${me.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytesOptional(imageFile)); imageURL=await getDownloadURL(r); } await addDoc(collection(db,'posts'),{ uid:me.uid, userName:me.displayName||'사용자', userPhoto:me.photoURL||'', text:text.trim(), imageURL, ts:serverTimestamp(), likes:[] }); }
+
+      async function toggleLike(postId){ const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const ref=doc(db,'posts',postId); const snap=await getDoc(ref); if(!snap.exists()) return; const likes=snap.data().likes||[]; await updateDoc(ref,{ likes: likes.includes(me.uid)? arrayRemove(me.uid): arrayUnion(me.uid) }); }
+
+      async function toggleComments(postId, postEl){ const list=postEl.querySelector('.comment-list'); const commentsSnap=await getDocs(collection(db,'posts',postId,'comments')); const items=commentsSnap.docs.sort((a,b)=>{ const ta=a.data().ts?.toMillis?.()||0; const tb=b.data().ts?.toMillis?.()||0; return ta-tb; }).map(d=>{ const c=d.data(); const when=c.ts?.toDate?.()? timeAgo(c.ts.toDate().getTime()):''; const who=c.userName||'사용자'; return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text||'')}</div>`; }).join(''); list.innerHTML=items||'<div class="hint">아직 댓글이 없어요.</div>'; postEl.querySelector('.comments').setAttribute('data-loaded','1'); }
+
+      async function submitComment(e, postId, postEl){ e.preventDefault(); const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const input=e.target.querySelector('input'); const text=input.value.trim(); if(!text) return; await addDoc(collection(db,'posts',postId,'comments'),{ uid:me.uid, userName:me.displayName||'사용자', text, ts:serverTimestamp() }); input.value=''; toggleComments(postId,postEl); }
+
+      // 새 글 작성
+      document.querySelector('#postForm').onsubmit = async (e)=>{ e.preventDefault(); const text=document.querySelector('#po_text').value; const imageFile=document.querySelector('#po_img').files[0]; if(!text.trim()){ alert('내용을 입력하세요'); return; } await createPost({ text, imageFile }); document.querySelector('#po_text').value=''; document.querySelector('#po_img').value=''; window.scrollTo({top:0,behavior:'smooth'}); };
     }
-
-    function renderNav(user){
-      if(user){ greet.hidden=false; greet.textContent=`안녕하세요, ${user.displayName||'사용자'} 님!`; btnLogout.hidden=false; btnToSignup.hidden=true; }
-      else { greet.hidden=true; btnLogout.hidden=true; btnToSignup.hidden=false; }
-    }
-    function renderAccountBox(user){
-      const avatar=user.photoURL||placeholderAvatar(user.displayName||'U');
-      $('#accountBox').innerHTML = `
-        <div style="display:flex; gap:12px; align-items:center;">
-          <img src="${avatar}" alt="avatar" style="width:56px;height:56px;border-radius:14px;border:1px solid #31407f;object-fit:cover;" />
-          <div>
-            <div style="font-weight:800;">${escapeHtml(user.displayName||'사용자')}</div>
-            <div class="hint">${escapeHtml(user.email||'')}</div>
-          </div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:8px;">
-          <button class="btn" id="goWrite">바로 글 쓰기</button>
-          <button class="btn alt" id="goTop">피드 맨 위로</button>
-        </div>`;
-      $('#goWrite').onclick=()=>$('#po_text').focus();
-      $('#goTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    // ------- Auth state -------
-    onAuthStateChanged(auth, (user)=>{
-      if(user){ renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain); }
-      else { renderNav(null); show(pageSignup); }
-    });
-
-    // ------- Signup/Login -------
-    async function fileToBytes(file){ if(!file) return null; const buf=await file.arrayBuffer(); return new Uint8Array(buf); }
-
-    $('#signupForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const name=$('#su_name').value.trim();
-      const email=$('#su_email').value.trim();
-      const pw=$('#su_pw').value;
-      const avatarFile=$('#su_avatar').files[0];
-      const msg=$('#signupMsg'); msg.textContent='';
-      try{
-        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
-        let photoURL='';
-        if(avatarFile){ const r=sRef(storage, `avatars/${user.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytes(avatarFile)); photoURL=await getDownloadURL(r); }
-        await updateProfile(user, { displayName:name, photoURL: photoURL||null });
-        await setDoc(doc(db,'users',user.uid), { uid:user.uid, name, email, photoURL:photoURL||'', createdAt: serverTimestamp() });
-      }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'가입 실패')}</span>`; }
-    });
-
-    $('#loginForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const email=$('#li_email').value.trim();
-      const pw=$('#li_pw').value;
-      const msg=$('#loginMsg'); msg.textContent='';
-      try{ await signInWithEmailAndPassword(auth,email,pw); show(pageMain); }
-      catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'로그인 실패')}</span>`; }
-    });
-
-    btnLogout.onclick=()=>signOut(auth);
-    btnToSignup.onclick=()=>show(pageSignup);
-    $('#backToSignup').onclick=()=>show(pageSignup);
-
-    // ------- Posts (Firestore) -------
-    const feedEl=$('#feed');
-    let unsubscribeFeed=null;
-
-    function renderEmpty(){ feedEl.innerHTML='<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
-
-    function renderPosts(docs){
-      if(!docs.length){ renderEmpty(); return; }
-      const html=docs.map(d=>{ const p=d.data(); const likeCount=(p.likes||[]).length; const me=auth.currentUser; const iLiked=me&&p.likes&&p.likes.includes(me.uid); const userName=p.userName||'사용자'; const ts=p.ts?.toDate? p.ts.toDate().getTime(): (p.ts||0); return `
-        <article class="post" data-id="${d.id}">
-          <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
-          <div>${escapeHtml(p.text||'')}</div>
-          ${p.imageURL? `<img class="img" src="${p.imageURL}" alt="post image"/>`:''}
-          <div class="actions">
-            <button class="btn alt btn-like">${iLiked?'💖':'❤️'} <span class="like-count">${likeCount}</span></button>
-            <button class="btn alt btn-comment">💬 댓글</button>
-          </div>
-          <div class="comments" data-loaded="0">
-            <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
-            <div class="comment-list"></div>
-            <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
-              <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
-              <button class="btn" type="submit">등록</button>
-            </form>
-          </div>
-        </article>`; }).join('');
-      feedEl.innerHTML=html;
-
-      feedEl.querySelectorAll('.post').forEach(postEl=>{
-        const id=postEl.getAttribute('data-id');
-        postEl.querySelector('.btn-like').onclick=()=>toggleLike(id);
-        postEl.querySelector('.btn-comment').onclick=()=>toggleComments(id,postEl);
-        postEl.querySelector('.comment-form').onsubmit=(e)=>submitComment(e,id,postEl);
-      });
-    }
-
-    function attachFeedListener(){ if(unsubscribeFeed) unsubscribeFeed(); const q=query(collection(db,'posts'), orderBy('ts','desc')); unsubscribeFeed=onSnapshot(q,(snap)=>renderPosts(snap.docs)); }
-
-    async function fileToBytesOptional(file){ return file? new Uint8Array(await file.arrayBuffer()): null; }
-
-    async function createPost({ text, imageFile }){
-      const me=auth.currentUser; if(!me) return;
-      let imageURL='';
-      if(imageFile){ const r=sRef(storage,`posts/${me.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytesOptional(imageFile)); imageURL=await getDownloadURL(r); }
-      await addDoc(collection(db,'posts'), { uid:me.uid, userName:me.displayName||'사용자', userPhoto:me.photoURL||'', text:text.trim(), imageURL, ts:serverTimestamp(), likes:[] });
-    }
-
-    async function toggleLike(postId){ const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const ref=doc(db,'posts',postId); const snap=await getDoc(ref); if(!snap.exists()) return; const likes=snap.data().likes||[]; await updateDoc(ref,{ likes: likes.includes(me.uid)? arrayRemove(me.uid): arrayUnion(me.uid) }); }
-
-    async function toggleComments(postId, postEl){ const list=postEl.querySelector('.comment-list'); const loaded=postEl.querySelector('.comments').getAttribute('data-loaded')==='1'; if(loaded){ list.parentElement.querySelector('.hint').textContent='댓글 새로고침'; } const commentsSnap=await getDocs(collection(db,'posts',postId,'comments')); const items=commentsSnap.docs.sort((a,b)=>{ const ta=a.data().ts?.toMillis?.()||0; const tb=b.data().ts?.toMillis?.()||0; return ta-tb; }).map(d=>{ const c=d.data(); const when=c.ts?.toDate?.()? timeAgo(c.ts.toDate().getTime()):''; const who=c.userName||'사용자'; return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text||'')}</div>`; }).join(''); list.innerHTML=items||'<div class="hint">아직 댓글이 없어요.</div>'; postEl.querySelector('.comments').setAttribute('data-loaded','1'); }
-
-    async function submitComment(e, postId, postEl){ e.preventDefault(); const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const input=e.target.querySelector('input'); const text=input.value.trim(); if(!text) return; await addDoc(collection(db,'posts',postId,'comments'), { uid:me.uid, userName:me.displayName||'사용자', text, ts:serverTimestamp() }); input.value=''; toggleComments(postId, postEl); }
-
-    // 새 글 작성
-    $('#postForm').addEventListener('submit', async (e)=>{ e.preventDefault(); const text=$('#po_text').value; const imageFile=$('#po_img').files[0]; if(!text.trim()){ alert('내용을 입력하세요'); return; } await createPost({ text, imageFile }); $('#po_text').value=''; $('#po_img').value=''; window.scrollTo({top:0,behavior:'smooth'}); });
-  </script>
-</body>
-</html>
-<!doctype html>
-<html lang="ko">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>동아리 블로그 — Firebase(단일 회원가입 폼)</title>
-  <style>
-    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ok:#1fbf74; --bad:#ff6363; }
-    *{box-sizing:border-box}
-    body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:radial-gradient(1200px 700px at 10% -10%,#1a2146 0%, var(--bg) 40%);color:var(--text)}
-    a{color:var(--accent);text-decoration:none}
-    .wrap{max-width:980px;margin:0 auto;padding:24px}
-    .nav{display:flex;align-items:center;justify-content:space-between;gap:16px;padding:16px 20px;background:linear-gradient(180deg,#19204a 0%,#121735 100%);border-bottom:1px solid #2a346a;position:sticky;top:0;z-index:10}
-    .brand{font-weight:800;letter-spacing:.3px}
-    .pill{padding:6px 12px;border:1px solid #2a346a;border-radius:999px;color:var(--text);background:#121735}
-    .btn{padding:10px 14px;background:linear-gradient(180deg,#2a346a,#1b2351);border:1px solid #39458c;border-radius:12px;color:#eaf0ff;cursor:pointer;transition:transform .05s ease}
-    .btn:hover{transform:translateY(-1px)}
-    .btn.alt{background:transparent;border-color:#3b467f}
-    .grid{display:grid;gap:16px}
-    .card{background:linear-gradient(180deg,#151b3b,#0f1430);border:1px solid #28306a;border-radius:16px;box-shadow:0 12px 24px rgba(0,0,0,.35)}
-    .card .hd{padding:18px 20px;border-bottom:1px solid #26306b;font-weight:700}
-    .card .bd{padding:18px 20px}
-    .row{display:grid;gap:10px;margin-bottom:12px}
-    label{font-size:14px;color:#cfe1ff}
-    input[type="text"],input[type="email"],input[type="password"],textarea{width:100%;padding:12px 12px;border-radius:12px;border:1px solid #34407d;background:#0d1330;color:#e8edff;outline:none}
-    input[type="file"]{color:#cfe1ff}
-    textarea{min-height:90px;resize:vertical}
-    .hint{font-size:12px;color:var(--muted)}
-    .error{color:var(--bad);font-size:13px}
-    .ok{color:var(--ok);font-size:13px}
-    .cols{display:grid;grid-template-columns:1fr;gap:16px}
-    @media (min-width:900px){.cols{grid-template-columns:1.2fr 2fr}}
-    .right{position:sticky;top:84px;height:fit-content}
-    .post{display:grid;gap:10px;padding:14px;border-radius:12px;background:#12173a;border:1px solid #2a356e}
-    .post .meta{display:flex;align-items:center;gap:10px;font-size:14px;color:#b9c9ff}
-    .post .img{border-radius:12px;max-height:340px;width:100%;object-fit:cover;border:1px solid #2e3a79}
-    .actions{display:flex;gap:10px}
-    .comment{padding:10px 12px;background:#0f1434;border:1px solid #2a356e;border-radius:10px;margin-top:6px}
-    .empty{color:#9fb1ff;text-align:center;padding:20px}
-    [hidden]{display:none!important}
-  </style>
-</head>
-<body>
-  <header class="nav">
-    <div class="brand">🚀 동아리 블로그 (Firebase)</div>
-    <div id="navRight" style="display:flex; gap:8px; align-items:center;">
-      <span id="greet" class="pill" hidden></span>
-      <button id="btnToSignup" class="btn alt" hidden>회원가입</button>
-      <button id="btnLogout" class="btn" hidden>로그아웃</button>
-    </div>
-  </header>
-
-  <main class="wrap">
-    <!-- ✅ 회원가입: 단일 카드만 표시 -->
-    <section id="page-signup" class="grid">
-      <div class="card">
-        <div class="hd">회원가입</div>
-        <div class="bd">
-          <form id="signupForm" autocomplete="off">
-            <div class="row">
-              <label>이름</label>
-              <input id="su_name" type="text" placeholder="예: 김코딩" required />
-            </div>
-            <div class="row">
-              <label>이메일</label>
-              <input id="su_email" type="email" placeholder="you@example.com" required />
-            </div>
-            <div class="row">
-              <label>비밀번호 <span class="hint">(최소 6자)</span></label>
-              <input id="su_pw" type="password" minlength="6" required />
-            </div>
-            <div class="row">
-              <label>프로필 이미지 (선택)</label>
-              <input id="su_avatar" type="file" accept="image/*" />
-              <div class="hint">Firebase Storage에 업로드됩니다.</div>
-            </div>
-            <div id="signupMsg" class="hint"></div>
-            <div class="row">
-              <button class="btn" type="submit">가입하기</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-
-    <!-- 메인 피드 -->
-    <section id="page-main" class="cols" hidden>
-      <aside class="right">
-        <div class="card">
-          <div class="hd">새 글 쓰기</div>
-          <div class="bd">
-            <form id="postForm">
-              <div class="row">
-                <label>내용</label>
-                <textarea id="po_text" placeholder="무슨 일이 있었나요?" required></textarea>
-              </div>
-              <div class="row">
-                <label>사진 (선택)</label>
-                <input id="po_img" type="file" accept="image/*" />
-              </div>
-              <div class="row">
-                <button class="btn" type="submit">업로드</button>
-              </div>
-            </form>
-          </div>
-        </div>
-
-        <div class="card" style="margin-top:16px;">
-          <div class="hd">내 계정</div>
-          <div class="bd" id="accountBox"></div>
-        </div>
-      </aside>
-
-      <section>
-        <div class="card">
-          <div class="hd">피드</div>
-          <div class="bd" id="feed"><div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div></div>
-        </div>
-      </section>
-    </section>
-
-    <!-- 로그인 -->
-    <section id="page-login" class="grid" hidden>
-      <div class="card">
-        <div class="hd">로그인</div>
-        <div class="bd">
-          <form id="loginForm" autocomplete="off">
-            <div class="row">
-              <label>이메일</label>
-              <input id="li_email" type="email" required />
-            </div>
-            <div class="row">
-              <label>비밀번호</label>
-              <input id="li_pw" type="password" required />
-            </div>
-            <div id="loginMsg" class="hint"></div>
-            <div class="row">
-              <button class="btn" type="submit">로그인</button>
-              <button class="btn alt" id="backToSignup" type="button">회원가입으로</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </section>
-  </main>
-
-  <!-- Firebase SDKs (ESM) -->
-  <script type="module">
-    import { initializeApp } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-app.js';
-    import { getAuth, onAuthStateChanged, createUserWithEmailAndPassword, updateProfile, signInWithEmailAndPassword, signOut } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-auth.js';
-    import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
-    import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js';
-
-    // ▶ 본인 프로젝트 구성값으로 교체하세요
-    const firebaseConfig = {
-      apiKey: "YOUR_API_KEY",
-      authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-      projectId: "YOUR_PROJECT_ID",
-      storageBucket: "YOUR_PROJECT_ID.appspot.com",
-      appId: "YOUR_APP_ID"
-    };
-
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
-    const storage = getStorage(app);
-
-    // ------- DOM helpers -------
-    const $ = (sel) => document.querySelector(sel);
-    const pageSignup = $('#page-signup');
-    const pageMain = $('#page-main');
-    const pageLogin = $('#page-login');
-    const greet = $('#greet');
-    const btnLogout = $('#btnLogout');
-    const btnToSignup = $('#btnToSignup');
-
-    function show(section){ [pageSignup,pageMain,pageLogin].forEach(el=>el.hidden=true); section.hidden=false; }
-    function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
-    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now()-ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
-
-    function placeholderAvatar(name){
-      const initials=(name||'?').trim().slice(0,2).toUpperCase();
-      return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='#1a245b'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'>${initials}</text></svg>`)}`;
-    }
-
-    function renderNav(user){
-      if(user){ greet.hidden=false; greet.textContent=`안녕하세요, ${user.displayName||'사용자'} 님!`; btnLogout.hidden=false; btnToSignup.hidden=true; }
-      else { greet.hidden=true; btnLogout.hidden=true; btnToSignup.hidden=false; }
-    }
-    function renderAccountBox(user){
-      const avatar=user.photoURL||placeholderAvatar(user.displayName||'U');
-      $('#accountBox').innerHTML = `
-        <div style="display:flex; gap:12px; align-items:center;">
-          <img src="${avatar}" alt="avatar" style="width:56px;height:56px;border-radius:14px;border:1px solid #31407f;object-fit:cover;" />
-          <div>
-            <div style="font-weight:800;">${escapeHtml(user.displayName||'사용자')}</div>
-            <div class="hint">${escapeHtml(user.email||'')}</div>
-          </div>
-        </div>
-        <div style="margin-top:12px;display:flex;gap:8px;">
-          <button class="btn" id="goWrite">바로 글 쓰기</button>
-          <button class="btn alt" id="goTop">피드 맨 위로</button>
-        </div>`;
-      $('#goWrite').onclick=()=>$('#po_text').focus();
-      $('#goTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
-    }
-
-    // ------- Auth state -------
-    onAuthStateChanged(auth, (user)=>{
-      if(user){ renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain); }
-      else { renderNav(null); show(pageSignup); }
-    });
-
-    // ------- Signup/Login -------
-    async function fileToBytes(file){ if(!file) return null; const buf=await file.arrayBuffer(); return new Uint8Array(buf); }
-
-    $('#signupForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const name=$('#su_name').value.trim();
-      const email=$('#su_email').value.trim();
-      const pw=$('#su_pw').value;
-      const avatarFile=$('#su_avatar').files[0];
-      const msg=$('#signupMsg'); msg.textContent='';
-      try{
-        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
-        let photoURL='';
-        if(avatarFile){ const r=sRef(storage, `avatars/${user.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytes(avatarFile)); photoURL=await getDownloadURL(r); }
-        await updateProfile(user, { displayName:name, photoURL: photoURL||null });
-        await setDoc(doc(db,'users',user.uid), { uid:user.uid, name, email, photoURL:photoURL||'', createdAt: serverTimestamp() });
-      }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'가입 실패')}</span>`; }
-    });
-
-    $('#loginForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const email=$('#li_email').value.trim();
-      const pw=$('#li_pw').value;
-      const msg=$('#loginMsg'); msg.textContent='';
-      try{ await signInWithEmailAndPassword(auth,email,pw); show(pageMain); }
-      catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'로그인 실패')}</span>`; }
-    });
-
-    btnLogout.onclick=()=>signOut(auth);
-    btnToSignup.onclick=()=>show(pageSignup);
-    $('#backToSignup').onclick=()=>show(pageSignup);
-
-    // ------- Posts (Firestore) -------
-    const feedEl=$('#feed');
-    let unsubscribeFeed=null;
-
-    function renderEmpty(){ feedEl.innerHTML='<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
-
-    function renderPosts(docs){
-      if(!docs.length){ renderEmpty(); return; }
-      const html=docs.map(d=>{ const p=d.data(); const likeCount=(p.likes||[]).length; const me=auth.currentUser; const iLiked=me&&p.likes&&p.likes.includes(me.uid); const userName=p.userName||'사용자'; const ts=p.ts?.toDate? p.ts.toDate().getTime(): (p.ts||0); return `
-        <article class="post" data-id="${d.id}">
-          <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
-          <div>${escapeHtml(p.text||'')}</div>
-          ${p.imageURL? `<img class="img" src="${p.imageURL}" alt="post image"/>`:''}
-          <div class="actions">
-            <button class="btn alt btn-like">${iLiked?'💖':'❤️'} <span class="like-count">${likeCount}</span></button>
-            <button class="btn alt btn-comment">💬 댓글</button>
-          </div>
-          <div class="comments" data-loaded="0">
-            <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
-            <div class="comment-list"></div>
-            <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
-              <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
-              <button class="btn" type="submit">등록</button>
-            </form>
-          </div>
-        </article>`; }).join('');
-      feedEl.innerHTML=html;
-
-      feedEl.querySelectorAll('.post').forEach(postEl=>{
-        const id=postEl.getAttribute('data-id');
-        postEl.querySelector('.btn-like').onclick=()=>toggleLike(id);
-        postEl.querySelector('.btn-comment').onclick=()=>toggleComments(id,postEl);
-        postEl.querySelector('.comment-form').onsubmit=(e)=>submitComment(e,id,postEl);
-      });
-    }
-
-    function attachFeedListener(){ if(unsubscribeFeed) unsubscribeFeed(); const q=query(collection(db,'posts'), orderBy('ts','desc')); unsubscribeFeed=onSnapshot(q,(snap)=>renderPosts(snap.docs)); }
-
-    async function fileToBytesOptional(file){ return file? new Uint8Array(await file.arrayBuffer()): null; }
-
-    async function createPost({ text, imageFile }){
-      const me=auth.currentUser; if(!me) return;
-      let imageURL='';
-      if(imageFile){ const r=sRef(storage,`posts/${me.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytesOptional(imageFile)); imageURL=await getDownloadURL(r); }
-      await addDoc(collection(db,'posts'), { uid:me.uid, userName:me.displayName||'사용자', userPhoto:me.photoURL||'', text:text.trim(), imageURL, ts:serverTimestamp(), likes:[] });
-    }
-
-    async function toggleLike(postId){ const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const ref=doc(db,'posts',postId); const snap=await getDoc(ref); if(!snap.exists()) return; const likes=snap.data().likes||[]; await updateDoc(ref,{ likes: likes.includes(me.uid)? arrayRemove(me.uid): arrayUnion(me.uid) }); }
-
-    async function toggleComments(postId, postEl){ const list=postEl.querySelector('.comment-list'); const loaded=postEl.querySelector('.comments').getAttribute('data-loaded')==='1'; if(loaded){ list.parentElement.querySelector('.hint').textContent='댓글 새로고침'; } const commentsSnap=await getDocs(collection(db,'posts',postId,'comments')); const items=commentsSnap.docs.sort((a,b)=>{ const ta=a.data().ts?.toMillis?.()||0; const tb=b.data().ts?.toMillis?.()||0; return ta-tb; }).map(d=>{ const c=d.data(); const when=c.ts?.toDate?.()? timeAgo(c.ts.toDate().getTime()):''; const who=c.userName||'사용자'; return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text||'')}</div>`; }).join(''); list.innerHTML=items||'<div class="hint">아직 댓글이 없어요.</div>'; postEl.querySelector('.comments').setAttribute('data-loaded','1'); }
-
-    async function submitComment(e, postId, postEl){ e.preventDefault(); const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const input=e.target.querySelector('input'); const text=input.value.trim(); if(!text) return; await addDoc(collection(db,'posts',postId,'comments'), { uid:me.uid, userName:me.displayName||'사용자', text, ts:serverTimestamp() }); input.value=''; toggleComments(postId, postEl); }
-
-    // 새 글 작성
-    $('#postForm').addEventListener('submit', async (e)=>{ e.preventDefault(); const text=$('#po_text').value; const imageFile=$('#po_img').files[0]; if(!text.trim()){ alert('내용을 입력하세요'); return; } await createPost({ text, imageFile }); $('#po_text').value=''; $('#po_img').value=''; window.scrollTo({top:0,behavior:'smooth'}); });
   </script>
 </body>
 </html>
