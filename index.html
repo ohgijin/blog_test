@@ -3,9 +3,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>동아리 블로그 데모 — Firebase 버전</title>
+  <title>동아리 블로그 — Firebase(단일 회원가입 폼)</title>
   <style>
-    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ring:#4055a8; --ok:#1fbf74; --warn:#ffb020; --bad:#ff6363; }
+    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ok:#1fbf74; --bad:#ff6363; }
     *{box-sizing:border-box}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:radial-gradient(1200px 700px at 10% -10%,#1a2146 0%, var(--bg) 40%);color:var(--text)}
     a{color:var(--accent);text-decoration:none}
@@ -35,11 +35,9 @@
     .post .meta{display:flex;align-items:center;gap:10px;font-size:14px;color:#b9c9ff}
     .post .img{border-radius:12px;max-height:340px;width:100%;object-fit:cover;border:1px solid #2e3a79}
     .actions{display:flex;gap:10px}
-    .chip{padding:6px 10px;border:1px solid #35407d;border-radius:999px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
     .comment{padding:10px 12px;background:#0f1434;border:1px solid #2a356e;border-radius:10px;margin-top:6px}
     .empty{color:#9fb1ff;text-align:center;padding:20px}
     [hidden]{display:none!important}
-    code.inline{background:#0f1430;border:1px solid #2a356e;padding:2px 6px;border-radius:6px}
   </style>
 </head>
 <body>
@@ -53,7 +51,7 @@
   </header>
 
   <main class="wrap">
-    <!-- SIGNUP PANEL -->
+    <!-- ✅ 회원가입: 단일 카드만 표시 -->
     <section id="page-signup" class="grid">
       <div class="card">
         <div class="hd">회원가입</div>
@@ -83,24 +81,9 @@
           </form>
         </div>
       </div>
-
-      <div class="card">
-        <div class="hd">설명</div>
-        <div class="bd">
-          <p>이 버전은 <b>Firebase Auth + Firestore + Storage</b>를 사용합니다. GitHub Pages 같은 정적 호스팅에서도 <b>여러 사용자와 글/댓글이 공유</b>됩니다.</p>
-          <ol>
-            <li><b>Firebase 콘솔</b>에서 프로젝트 생성</li>
-            <li>웹 앱 추가 → <b>구성값(firebaseConfig)</b> 복사</li>
-            <li>인증(Authentication): 이메일/비밀번호 사용 설정</li>
-            <li>Firestore 데이터베이스 생성 (규칙은 아래 주석 확인)</li>
-            <li>Storage 활성화 (이미지 업로드)</li>
-            <li>아래 코드의 <code class="inline">firebaseConfig</code> 값 채우고 GitHub Pages에 업로드</li>
-          </ol>
-        </div>
-      </div>
     </section>
 
-    <!-- MAIN (FEED) PANEL -->
+    <!-- 메인 피드 -->
     <section id="page-main" class="cols" hidden>
       <aside class="right">
         <div class="card">
@@ -136,7 +119,7 @@
       </section>
     </section>
 
-    <!-- LOGIN PANEL -->
+    <!-- 로그인 -->
     <section id="page-login" class="grid" hidden>
       <div class="card">
         <div class="hd">로그인</div>
@@ -159,7 +142,6 @@
         </div>
       </div>
     </section>
-
   </main>
 
   <!-- Firebase SDKs (ESM) -->
@@ -169,7 +151,7 @@
     import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
     import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js';
 
-    // 1) 여기에 본인 프로젝트의 구성값을 붙여 넣으세요
+    // ▶ 본인 프로젝트 구성값으로 교체하세요
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -178,7 +160,6 @@
       appId: "YOUR_APP_ID"
     };
 
-    // 2) 초기화
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -193,251 +174,130 @@
     const btnLogout = $('#btnLogout');
     const btnToSignup = $('#btnToSignup');
 
-    function show(section){ for (const el of [pageSignup,pageMain,pageLogin]) el.hidden = true; section.hidden = false; }
+    function show(section){ [pageSignup,pageMain,pageLogin].forEach(el=>el.hidden=true); section.hidden=false; }
     function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
-    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now() - ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
+    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now()-ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
 
     function placeholderAvatar(name){
-      const initials = (name||'?').trim().slice(0,2).toUpperCase();
+      const initials=(name||'?').trim().slice(0,2).toUpperCase();
       return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='#1a245b'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'>${initials}</text></svg>`)}`;
     }
 
     function renderNav(user){
-      if (user){
-        greet.hidden = false; greet.textContent = `안녕하세요, ${user.displayName || '사용자'} 님!`;
-        btnLogout.hidden = false; btnToSignup.hidden = true;
-      } else {
-        greet.hidden = true; btnLogout.hidden = true; btnToSignup.hidden = false;
-      }
+      if(user){ greet.hidden=false; greet.textContent=`안녕하세요, ${user.displayName||'사용자'} 님!`; btnLogout.hidden=false; btnToSignup.hidden=true; }
+      else { greet.hidden=true; btnLogout.hidden=true; btnToSignup.hidden=false; }
     }
-
     function renderAccountBox(user){
-      const avatar = user.photoURL || placeholderAvatar(user.displayName||'U');
-      const html = `
+      const avatar=user.photoURL||placeholderAvatar(user.displayName||'U');
+      $('#accountBox').innerHTML = `
         <div style="display:flex; gap:12px; align-items:center;">
           <img src="${avatar}" alt="avatar" style="width:56px;height:56px;border-radius:14px;border:1px solid #31407f;object-fit:cover;" />
           <div>
-            <div style="font-weight:800;">${escapeHtml(user.displayName || '사용자')}</div>
-            <div class="hint">${escapeHtml(user.email || '')}</div>
+            <div style="font-weight:800;">${escapeHtml(user.displayName||'사용자')}</div>
+            <div class="hint">${escapeHtml(user.email||'')}</div>
           </div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px;">
           <button class="btn" id="goWrite">바로 글 쓰기</button>
           <button class="btn alt" id="goTop">피드 맨 위로</button>
         </div>`;
-      $('#accountBox').innerHTML = html;
-      $('#goWrite').onclick = () => $('#po_text').focus();
-      $('#goTop').onclick = () => window.scrollTo({top:0, behavior:'smooth'});
+      $('#goWrite').onclick=()=>$('#po_text').focus();
+      $('#goTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
     }
 
-    // ------- Auth state handling -------
-    onAuthStateChanged(auth, async (user) => {
-      if (user){
-        renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain);
-      } else {
-        renderNav(null); show(pageSignup);
-      }
+    // ------- Auth state -------
+    onAuthStateChanged(auth, (user)=>{
+      if(user){ renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain); }
+      else { renderNav(null); show(pageSignup); }
     });
 
     // ------- Signup/Login -------
-    async function fileToBytes(file){ if(!file) return null; const buf = await file.arrayBuffer(); return new Uint8Array(buf); }
+    async function fileToBytes(file){ if(!file) return null; const buf=await file.arrayBuffer(); return new Uint8Array(buf); }
 
     $('#signupForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const name = $('#su_name').value.trim();
-      const email = $('#su_email').value.trim();
-      const pw = $('#su_pw').value;
-      const avatarFile = $('#su_avatar').files[0];
-      const msg = $('#signupMsg'); msg.textContent = '';
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pw);
-        const user = cred.user;
-        let photoURL = '';
-        if (avatarFile){
-          const key = `avatars/${user.uid}/${crypto.randomUUID()}`;
-          const r = sRef(storage, key);
-          await uploadBytes(r, await fileToBytes(avatarFile));
-          photoURL = await getDownloadURL(r);
-        }
-        await updateProfile(user, { displayName: name, photoURL: photoURL || null });
-        // users 컬렉션에 기록
-        await setDoc(doc(db, 'users', user.uid), { uid: user.uid, name, email, photoURL: photoURL || '', createdAt: serverTimestamp() });
-        // onAuthStateChanged가 UI를 전환합니다.
-      } catch(err){ msg.innerHTML = `<span class="error">${escapeHtml(err.message || '가입 실패')}</span>`; }
+      const name=$('#su_name').value.trim();
+      const email=$('#su_email').value.trim();
+      const pw=$('#su_pw').value;
+      const avatarFile=$('#su_avatar').files[0];
+      const msg=$('#signupMsg'); msg.textContent='';
+      try{
+        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
+        let photoURL='';
+        if(avatarFile){ const r=sRef(storage, `avatars/${user.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytes(avatarFile)); photoURL=await getDownloadURL(r); }
+        await updateProfile(user, { displayName:name, photoURL: photoURL||null });
+        await setDoc(doc(db,'users',user.uid), { uid:user.uid, name, email, photoURL:photoURL||'', createdAt: serverTimestamp() });
+      }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'가입 실패')}</span>`; }
     });
 
     $('#loginForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const email = $('#li_email').value.trim();
-      const pw = $('#li_pw').value;
-      const msg = $('#loginMsg'); msg.textContent = '';
-      try { await signInWithEmailAndPassword(auth, email, pw); show(pageMain); }
-      catch(err){ msg.innerHTML = `<span class="error">${escapeHtml(err.message || '로그인 실패')}</span>`; }
+      const email=$('#li_email').value.trim();
+      const pw=$('#li_pw').value;
+      const msg=$('#loginMsg'); msg.textContent='';
+      try{ await signInWithEmailAndPassword(auth,email,pw); show(pageMain); }
+      catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'로그인 실패')}</span>`; }
     });
 
-    btnLogout.onclick = () => signOut(auth);
-    btnToSignup.onclick = () => show(pageSignup);
-    $('#backToSignup').onclick = () => show(pageSignup);
+    btnLogout.onclick=()=>signOut(auth);
+    btnToSignup.onclick=()=>show(pageSignup);
+    $('#backToSignup').onclick=()=>show(pageSignup);
 
     // ------- Posts (Firestore) -------
-    const feedEl = $('#feed');
-    let unsubscribeFeed = null;
+    const feedEl=$('#feed');
+    let unsubscribeFeed=null;
 
-    function renderEmpty(){ feedEl.innerHTML = '<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
+    function renderEmpty(){ feedEl.innerHTML='<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
 
     function renderPosts(docs){
-      if (!docs.length){ renderEmpty(); return; }
-      const html = docs.map(d => {
-        const p = d.data();
-        const likeCount = (p.likes || []).length;
-        const me = auth.currentUser;
-        const iLiked = me && p.likes && p.likes.includes(me.uid);
-        const userName = p.userName || '사용자';
-        const userPhoto = p.userPhoto || placeholderAvatar(userName);
-        const ts = p.ts && p.ts.toDate ? p.ts.toDate().getTime() : (p.ts || 0);
-        return `
-          <article class="post" data-id="${d.id}">
-            <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
-            <div>${escapeHtml(p.text || '')}</div>
-            ${p.imageURL ? `<img class="img" src="${p.imageURL}" alt="post image"/>` : ''}
-            <div class="actions">
-              <button class="btn alt btn-like">${iLiked ? '💖' : '❤️'} <span class="like-count">${likeCount}</span></button>
-              <button class="btn alt btn-comment">💬 댓글</button>
-            </div>
-            <div class="comments" data-loaded="0">
-              <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
-              <div class="comment-list"></div>
-              <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
-                <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
-                <button class="btn" type="submit">등록</button>
-              </form>
-            </div>
-          </article>`;
-      }).join('');
-      feedEl.innerHTML = html;
+      if(!docs.length){ renderEmpty(); return; }
+      const html=docs.map(d=>{ const p=d.data(); const likeCount=(p.likes||[]).length; const me=auth.currentUser; const iLiked=me&&p.likes&&p.likes.includes(me.uid); const userName=p.userName||'사용자'; const ts=p.ts?.toDate? p.ts.toDate().getTime(): (p.ts||0); return `
+        <article class="post" data-id="${d.id}">
+          <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
+          <div>${escapeHtml(p.text||'')}</div>
+          ${p.imageURL? `<img class="img" src="${p.imageURL}" alt="post image"/>`:''}
+          <div class="actions">
+            <button class="btn alt btn-like">${iLiked?'💖':'❤️'} <span class="like-count">${likeCount}</span></button>
+            <button class="btn alt btn-comment">💬 댓글</button>
+          </div>
+          <div class="comments" data-loaded="0">
+            <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
+            <div class="comment-list"></div>
+            <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
+              <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
+              <button class="btn" type="submit">등록</button>
+            </form>
+          </div>
+        </article>`; }).join('');
+      feedEl.innerHTML=html;
 
-      feedEl.querySelectorAll('.post').forEach(postEl => {
-        const id = postEl.getAttribute('data-id');
-        postEl.querySelector('.btn-like').onclick = () => toggleLike(id);
-        postEl.querySelector('.btn-comment').onclick = () => toggleComments(id, postEl);
-        postEl.querySelector('.comment-form').onsubmit = (e) => submitComment(e, id, postEl);
+      feedEl.querySelectorAll('.post').forEach(postEl=>{
+        const id=postEl.getAttribute('data-id');
+        postEl.querySelector('.btn-like').onclick=()=>toggleLike(id);
+        postEl.querySelector('.btn-comment').onclick=()=>toggleComments(id,postEl);
+        postEl.querySelector('.comment-form').onsubmit=(e)=>submitComment(e,id,postEl);
       });
     }
 
-    function attachFeedListener(){
-      if (unsubscribeFeed) unsubscribeFeed();
-      const q = query(collection(db, 'posts'), orderBy('ts','desc'));
-      unsubscribeFeed = onSnapshot(q, (snap)=>{ renderPosts(snap.docs); });
-    }
+    function attachFeedListener(){ if(unsubscribeFeed) unsubscribeFeed(); const q=query(collection(db,'posts'), orderBy('ts','desc')); unsubscribeFeed=onSnapshot(q,(snap)=>renderPosts(snap.docs)); }
+
+    async function fileToBytesOptional(file){ return file? new Uint8Array(await file.arrayBuffer()): null; }
 
     async function createPost({ text, imageFile }){
-      const me = auth.currentUser; if(!me) return;
-      let imageURL = '';
-      if (imageFile){
-        const key = `posts/${me.uid}/${crypto.randomUUID()}`;
-        const r = sRef(storage, key);
-        await uploadBytes(r, await fileToBytes(imageFile));
-        imageURL = await getDownloadURL(r);
-      }
-      await addDoc(collection(db, 'posts'), {
-        uid: me.uid,
-        userName: me.displayName || '사용자',
-        userPhoto: me.photoURL || '',
-        text: text.trim(),
-        imageURL,
-        ts: serverTimestamp(),
-        likes: []
-      });
+      const me=auth.currentUser; if(!me) return;
+      let imageURL='';
+      if(imageFile){ const r=sRef(storage,`posts/${me.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytesOptional(imageFile)); imageURL=await getDownloadURL(r); }
+      await addDoc(collection(db,'posts'), { uid:me.uid, userName:me.displayName||'사용자', userPhoto:me.photoURL||'', text:text.trim(), imageURL, ts:serverTimestamp(), likes:[] });
     }
 
-    async function toggleLike(postId){
-      const me = auth.currentUser; if(!me) return alert('로그인이 필요합니다.');
-      const ref = doc(db, 'posts', postId);
-      const snap = await getDoc(ref); if(!snap.exists()) return;
-      const likes = snap.data().likes || [];
-      await updateDoc(ref, { likes: likes.includes(me.uid) ? arrayRemove(me.uid) : arrayUnion(me.uid) });
-    }
+    async function toggleLike(postId){ const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const ref=doc(db,'posts',postId); const snap=await getDoc(ref); if(!snap.exists()) return; const likes=snap.data().likes||[]; await updateDoc(ref,{ likes: likes.includes(me.uid)? arrayRemove(me.uid): arrayUnion(me.uid) }); }
 
-    async function toggleComments(postId, postEl){
-      const list = postEl.querySelector('.comment-list');
-      const loaded = postEl.querySelector('.comments').getAttribute('data-loaded') === '1';
-      if (loaded){ list.parentElement.querySelector('.hint').textContent = '댓글 숨김 해제됨'; return; }
-      const commentsSnap = await getDocs(collection(db, 'posts', postId, 'comments'));
-      const items = commentsSnap.docs
-        .sort((a,b)=>{
-          const ta = a.data().ts?.toMillis?.() || 0; const tb = b.data().ts?.toMillis?.() || 0; return ta - tb; // oldest first
-        })
-        .map(d => {
-          const c = d.data();
-          const when = c.ts?.toDate?.() ? timeAgo(c.ts.toDate().getTime()) : '';
-          const who = c.userName || '사용자';
-          return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text || '')}</div>`;
-        }).join('');
-      list.innerHTML = items || '<div class="hint">아직 댓글이 없어요.</div>';
-      postEl.querySelector('.comments').setAttribute('data-loaded','1');
-      postEl.querySelector('.btn-comment').textContent = '💬 새로고침';
-    }
+    async function toggleComments(postId, postEl){ const list=postEl.querySelector('.comment-list'); const loaded=postEl.querySelector('.comments').getAttribute('data-loaded')==='1'; if(loaded){ list.parentElement.querySelector('.hint').textContent='댓글 새로고침'; } const commentsSnap=await getDocs(collection(db,'posts',postId,'comments')); const items=commentsSnap.docs.sort((a,b)=>{ const ta=a.data().ts?.toMillis?.()||0; const tb=b.data().ts?.toMillis?.()||0; return ta-tb; }).map(d=>{ const c=d.data(); const when=c.ts?.toDate?.()? timeAgo(c.ts.toDate().getTime()):''; const who=c.userName||'사용자'; return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text||'')}</div>`; }).join(''); list.innerHTML=items||'<div class="hint">아직 댓글이 없어요.</div>'; postEl.querySelector('.comments').setAttribute('data-loaded','1'); }
 
-    async function submitComment(e, postId, postEl){
-      e.preventDefault();
-      const me = auth.currentUser; if(!me) return alert('로그인이 필요합니다.');
-      const input = e.target.querySelector('input');
-      const text = input.value.trim(); if(!text) return;
-      await addDoc(collection(db,'posts',postId,'comments'), {
-        uid: me.uid,
-        userName: me.displayName || '사용자',
-        text,
-        ts: serverTimestamp()
-      });
-      input.value = '';
-      // 새 댓글 반영
-      toggleComments(postId, postEl);
-    }
+    async function submitComment(e, postId, postEl){ e.preventDefault(); const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const input=e.target.querySelector('input'); const text=input.value.trim(); if(!text) return; await addDoc(collection(db,'posts',postId,'comments'), { uid:me.uid, userName:me.displayName||'사용자', text, ts:serverTimestamp() }); input.value=''; toggleComments(postId, postEl); }
 
-    // 새 글 작성 핸들러
-    $('#postForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const text = $('#po_text').value; const imageFile = $('#po_img').files[0];
-      if (!text.trim()){ alert('내용을 입력하세요'); return; }
-      await createPost({ text, imageFile });
-      $('#po_text').value = ''; $('#po_img').value = '';
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-
-    // Firestore/Storage 규칙(참고용)
-    /*
-    // Firestore rules (개발용은 test mode OK, 배포 전 아래로 좁히기)
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        function signedIn() { return request.auth != null; }
-        match /users/{uid} {
-          allow read: if true;
-          allow write: if signedIn() && request.auth.uid == uid;
-        }
-        match /posts/{postId} {
-          allow read: if true;
-          allow create: if signedIn();
-          allow update, delete: if signedIn() && request.resource.data.uid == request.auth.uid;
-          match /comments/{commentId} {
-            allow read: if true;
-            allow create: if signedIn();
-          }
-        }
-      }
-    }
-
-    // Storage rules (개발용 public read, 배포 시 필요시 제한)
-    rules_version = '2';
-    service firebase.storage {
-      match /b/{bucket}/o {
-        match /{allPaths=**} {
-          allow read: if true;
-          allow write: if request.auth != null; // 로그인 사용자만 업로드
-        }
-      }
-    }
-    */
+    // 새 글 작성
+    $('#postForm').addEventListener('submit', async (e)=>{ e.preventDefault(); const text=$('#po_text').value; const imageFile=$('#po_img').files[0]; if(!text.trim()){ alert('내용을 입력하세요'); return; } await createPost({ text, imageFile }); $('#po_text').value=''; $('#po_img').value=''; window.scrollTo({top:0,behavior:'smooth'}); });
   </script>
 </body>
 </html>
@@ -446,9 +306,9 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>동아리 블로그 데모 — Firebase 버전</title>
+  <title>동아리 블로그 — Firebase(단일 회원가입 폼)</title>
   <style>
-    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ring:#4055a8; --ok:#1fbf74; --warn:#ffb020; --bad:#ff6363; }
+    :root { --bg:#0b1020; --panel:#141a34; --muted:#6c7aa7; --text:#e8edff; --brand:#7aa2ff; --accent:#8ef; --ok:#1fbf74; --bad:#ff6363; }
     *{box-sizing:border-box}
     body{margin:0;font-family:ui-sans-serif,system-ui,-apple-system,Segoe UI,Roboto,"Apple SD Gothic Neo","Noto Sans KR",sans-serif;background:radial-gradient(1200px 700px at 10% -10%,#1a2146 0%, var(--bg) 40%);color:var(--text)}
     a{color:var(--accent);text-decoration:none}
@@ -478,11 +338,9 @@
     .post .meta{display:flex;align-items:center;gap:10px;font-size:14px;color:#b9c9ff}
     .post .img{border-radius:12px;max-height:340px;width:100%;object-fit:cover;border:1px solid #2e3a79}
     .actions{display:flex;gap:10px}
-    .chip{padding:6px 10px;border:1px solid #35407d;border-radius:999px;font-size:13px;display:inline-flex;align-items:center;gap:6px}
     .comment{padding:10px 12px;background:#0f1434;border:1px solid #2a356e;border-radius:10px;margin-top:6px}
     .empty{color:#9fb1ff;text-align:center;padding:20px}
     [hidden]{display:none!important}
-    code.inline{background:#0f1430;border:1px solid #2a356e;padding:2px 6px;border-radius:6px}
   </style>
 </head>
 <body>
@@ -496,7 +354,7 @@
   </header>
 
   <main class="wrap">
-    <!-- SIGNUP PANEL -->
+    <!-- ✅ 회원가입: 단일 카드만 표시 -->
     <section id="page-signup" class="grid">
       <div class="card">
         <div class="hd">회원가입</div>
@@ -526,24 +384,9 @@
           </form>
         </div>
       </div>
-
-      <div class="card">
-        <div class="hd">설명</div>
-        <div class="bd">
-          <p>이 버전은 <b>Firebase Auth + Firestore + Storage</b>를 사용합니다. GitHub Pages 같은 정적 호스팅에서도 <b>여러 사용자와 글/댓글이 공유</b>됩니다.</p>
-          <ol>
-            <li><b>Firebase 콘솔</b>에서 프로젝트 생성</li>
-            <li>웹 앱 추가 → <b>구성값(firebaseConfig)</b> 복사</li>
-            <li>인증(Authentication): 이메일/비밀번호 사용 설정</li>
-            <li>Firestore 데이터베이스 생성 (규칙은 아래 주석 확인)</li>
-            <li>Storage 활성화 (이미지 업로드)</li>
-            <li>아래 코드의 <code class="inline">firebaseConfig</code> 값 채우고 GitHub Pages에 업로드</li>
-          </ol>
-        </div>
-      </div>
     </section>
 
-    <!-- MAIN (FEED) PANEL -->
+    <!-- 메인 피드 -->
     <section id="page-main" class="cols" hidden>
       <aside class="right">
         <div class="card">
@@ -579,7 +422,7 @@
       </section>
     </section>
 
-    <!-- LOGIN PANEL -->
+    <!-- 로그인 -->
     <section id="page-login" class="grid" hidden>
       <div class="card">
         <div class="hd">로그인</div>
@@ -602,7 +445,6 @@
         </div>
       </div>
     </section>
-
   </main>
 
   <!-- Firebase SDKs (ESM) -->
@@ -612,7 +454,7 @@
     import { getFirestore, collection, addDoc, getDocs, onSnapshot, query, orderBy, serverTimestamp, updateDoc, doc, arrayUnion, arrayRemove, getDoc, setDoc } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-firestore.js';
     import { getStorage, ref as sRef, uploadBytes, getDownloadURL } from 'https://www.gstatic.com/firebasejs/11.0.0/firebase-storage.js';
 
-    // 1) 여기에 본인 프로젝트의 구성값을 붙여 넣으세요
+    // ▶ 본인 프로젝트 구성값으로 교체하세요
     const firebaseConfig = {
       apiKey: "YOUR_API_KEY",
       authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
@@ -621,7 +463,6 @@
       appId: "YOUR_APP_ID"
     };
 
-    // 2) 초기화
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
     const db = getFirestore(app);
@@ -636,252 +477,130 @@
     const btnLogout = $('#btnLogout');
     const btnToSignup = $('#btnToSignup');
 
-    function show(section){ for (const el of [pageSignup,pageMain,pageLogin]) el.hidden = true; section.hidden = false; }
+    function show(section){ [pageSignup,pageMain,pageLogin].forEach(el=>el.hidden=true); section.hidden=false; }
     function escapeHtml(s){ return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;','\'':'&#39;'}[c])); }
-    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now() - ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
+    function timeAgo(ts){ if(!ts) return ''; const diff = Date.now()-ts; const m=60e3,h=3600e3,d=86400e3; if(diff<m) return '방금 전'; if(diff<h) return Math.floor(diff/m)+'분 전'; if(diff<d) return Math.floor(diff/h)+'시간 전'; return Math.floor(diff/d)+'일 전'; }
 
     function placeholderAvatar(name){
-      const initials = (name||'?').trim().slice(0,2).toUpperCase();
+      const initials=(name||'?').trim().slice(0,2).toUpperCase();
       return `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' width='128' height='128'><rect width='100%' height='100%' fill='#1a245b'/><text x='50%' y='55%' dominant-baseline='middle' text-anchor='middle' fill='white' font-size='48' font-family='sans-serif'>${initials}</text></svg>`)}`;
     }
 
     function renderNav(user){
-      if (user){
-        greet.hidden = false; greet.textContent = `안녕하세요, ${user.displayName || '사용자'} 님!`;
-        btnLogout.hidden = false; btnToSignup.hidden = true;
-      } else {
-        greet.hidden = true; btnLogout.hidden = true; btnToSignup.hidden = false;
-      }
+      if(user){ greet.hidden=false; greet.textContent=`안녕하세요, ${user.displayName||'사용자'} 님!`; btnLogout.hidden=false; btnToSignup.hidden=true; }
+      else { greet.hidden=true; btnLogout.hidden=true; btnToSignup.hidden=false; }
     }
-
     function renderAccountBox(user){
-      const avatar = user.photoURL || placeholderAvatar(user.displayName||'U');
-      const html = `
+      const avatar=user.photoURL||placeholderAvatar(user.displayName||'U');
+      $('#accountBox').innerHTML = `
         <div style="display:flex; gap:12px; align-items:center;">
           <img src="${avatar}" alt="avatar" style="width:56px;height:56px;border-radius:14px;border:1px solid #31407f;object-fit:cover;" />
           <div>
-            <div style="font-weight:800;">${escapeHtml(user.displayName || '사용자')}</div>
-            <div class="hint">${escapeHtml(user.email || '')}</div>
+            <div style="font-weight:800;">${escapeHtml(user.displayName||'사용자')}</div>
+            <div class="hint">${escapeHtml(user.email||'')}</div>
           </div>
         </div>
         <div style="margin-top:12px;display:flex;gap:8px;">
           <button class="btn" id="goWrite">바로 글 쓰기</button>
           <button class="btn alt" id="goTop">피드 맨 위로</button>
         </div>`;
-      $('#accountBox').innerHTML = html;
-      $('#goWrite').onclick = () => $('#po_text').focus();
-      $('#goTop').onclick = () => window.scrollTo({top:0, behavior:'smooth'});
+      $('#goWrite').onclick=()=>$('#po_text').focus();
+      $('#goTop').onclick=()=>window.scrollTo({top:0,behavior:'smooth'});
     }
 
-    // ------- Auth state handling -------
-    onAuthStateChanged(auth, async (user) => {
-      if (user){
-        renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain);
-      } else {
-        renderNav(null); show(pageSignup);
-      }
+    // ------- Auth state -------
+    onAuthStateChanged(auth, (user)=>{
+      if(user){ renderNav(user); renderAccountBox(user); attachFeedListener(); show(pageMain); }
+      else { renderNav(null); show(pageSignup); }
     });
 
     // ------- Signup/Login -------
-    async function fileToBytes(file){ if(!file) return null; const buf = await file.arrayBuffer(); return new Uint8Array(buf); }
+    async function fileToBytes(file){ if(!file) return null; const buf=await file.arrayBuffer(); return new Uint8Array(buf); }
 
     $('#signupForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const name = $('#su_name').value.trim();
-      const email = $('#su_email').value.trim();
-      const pw = $('#su_pw').value;
-      const avatarFile = $('#su_avatar').files[0];
-      const msg = $('#signupMsg'); msg.textContent = '';
-      try {
-        const cred = await createUserWithEmailAndPassword(auth, email, pw);
-        const user = cred.user;
-        let photoURL = '';
-        if (avatarFile){
-          const key = `avatars/${user.uid}/${crypto.randomUUID()}`;
-          const r = sRef(storage, key);
-          await uploadBytes(r, await fileToBytes(avatarFile));
-          photoURL = await getDownloadURL(r);
-        }
-        await updateProfile(user, { displayName: name, photoURL: photoURL || null });
-        // users 컬렉션에 기록
-        await setDoc(doc(db, 'users', user.uid), { uid: user.uid, name, email, photoURL: photoURL || '', createdAt: serverTimestamp() });
-        // onAuthStateChanged가 UI를 전환합니다.
-      } catch(err){ msg.innerHTML = `<span class="error">${escapeHtml(err.message || '가입 실패')}</span>`; }
+      const name=$('#su_name').value.trim();
+      const email=$('#su_email').value.trim();
+      const pw=$('#su_pw').value;
+      const avatarFile=$('#su_avatar').files[0];
+      const msg=$('#signupMsg'); msg.textContent='';
+      try{
+        const { user } = await createUserWithEmailAndPassword(auth, email, pw);
+        let photoURL='';
+        if(avatarFile){ const r=sRef(storage, `avatars/${user.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytes(avatarFile)); photoURL=await getDownloadURL(r); }
+        await updateProfile(user, { displayName:name, photoURL: photoURL||null });
+        await setDoc(doc(db,'users',user.uid), { uid:user.uid, name, email, photoURL:photoURL||'', createdAt: serverTimestamp() });
+      }catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'가입 실패')}</span>`; }
     });
 
     $('#loginForm').addEventListener('submit', async (e)=>{
       e.preventDefault();
-      const email = $('#li_email').value.trim();
-      const pw = $('#li_pw').value;
-      const msg = $('#loginMsg'); msg.textContent = '';
-      try { await signInWithEmailAndPassword(auth, email, pw); show(pageMain); }
-      catch(err){ msg.innerHTML = `<span class="error">${escapeHtml(err.message || '로그인 실패')}</span>`; }
+      const email=$('#li_email').value.trim();
+      const pw=$('#li_pw').value;
+      const msg=$('#loginMsg'); msg.textContent='';
+      try{ await signInWithEmailAndPassword(auth,email,pw); show(pageMain); }
+      catch(err){ msg.innerHTML=`<span class="error">${escapeHtml(err.message||'로그인 실패')}</span>`; }
     });
 
-    btnLogout.onclick = () => signOut(auth);
-    btnToSignup.onclick = () => show(pageSignup);
-    $('#backToSignup').onclick = () => show(pageSignup);
+    btnLogout.onclick=()=>signOut(auth);
+    btnToSignup.onclick=()=>show(pageSignup);
+    $('#backToSignup').onclick=()=>show(pageSignup);
 
     // ------- Posts (Firestore) -------
-    const feedEl = $('#feed');
-    let unsubscribeFeed = null;
+    const feedEl=$('#feed');
+    let unsubscribeFeed=null;
 
-    function renderEmpty(){ feedEl.innerHTML = '<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
+    function renderEmpty(){ feedEl.innerHTML='<div class="empty">아직 글이 없어요. 오른쪽에서 첫 글을 올려보세요!</div>'; }
 
     function renderPosts(docs){
-      if (!docs.length){ renderEmpty(); return; }
-      const html = docs.map(d => {
-        const p = d.data();
-        const likeCount = (p.likes || []).length;
-        const me = auth.currentUser;
-        const iLiked = me && p.likes && p.likes.includes(me.uid);
-        const userName = p.userName || '사용자';
-        const userPhoto = p.userPhoto || placeholderAvatar(userName);
-        const ts = p.ts && p.ts.toDate ? p.ts.toDate().getTime() : (p.ts || 0);
-        return `
-          <article class="post" data-id="${d.id}">
-            <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
-            <div>${escapeHtml(p.text || '')}</div>
-            ${p.imageURL ? `<img class="img" src="${p.imageURL}" alt="post image"/>` : ''}
-            <div class="actions">
-              <button class="btn alt btn-like">${iLiked ? '💖' : '❤️'} <span class="like-count">${likeCount}</span></button>
-              <button class="btn alt btn-comment">💬 댓글</button>
-            </div>
-            <div class="comments" data-loaded="0">
-              <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
-              <div class="comment-list"></div>
-              <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
-                <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
-                <button class="btn" type="submit">등록</button>
-              </form>
-            </div>
-          </article>`;
-      }).join('');
-      feedEl.innerHTML = html;
+      if(!docs.length){ renderEmpty(); return; }
+      const html=docs.map(d=>{ const p=d.data(); const likeCount=(p.likes||[]).length; const me=auth.currentUser; const iLiked=me&&p.likes&&p.likes.includes(me.uid); const userName=p.userName||'사용자'; const ts=p.ts?.toDate? p.ts.toDate().getTime(): (p.ts||0); return `
+        <article class="post" data-id="${d.id}">
+          <div class="meta">🧑‍🚀 <b>${escapeHtml(userName)}</b> · <span class="hint">${timeAgo(ts)}</span></div>
+          <div>${escapeHtml(p.text||'')}</div>
+          ${p.imageURL? `<img class="img" src="${p.imageURL}" alt="post image"/>`:''}
+          <div class="actions">
+            <button class="btn alt btn-like">${iLiked?'💖':'❤️'} <span class="like-count">${likeCount}</span></button>
+            <button class="btn alt btn-comment">💬 댓글</button>
+          </div>
+          <div class="comments" data-loaded="0">
+            <div class="hint">댓글을 보려면 버튼을 눌러요.</div>
+            <div class="comment-list"></div>
+            <form class="comment-form" style="margin-top:8px; display:flex; gap:8px;">
+              <input type="text" placeholder="댓글을 입력하세요" required style="flex:1;" />
+              <button class="btn" type="submit">등록</button>
+            </form>
+          </div>
+        </article>`; }).join('');
+      feedEl.innerHTML=html;
 
-      feedEl.querySelectorAll('.post').forEach(postEl => {
-        const id = postEl.getAttribute('data-id');
-        postEl.querySelector('.btn-like').onclick = () => toggleLike(id);
-        postEl.querySelector('.btn-comment').onclick = () => toggleComments(id, postEl);
-        postEl.querySelector('.comment-form').onsubmit = (e) => submitComment(e, id, postEl);
+      feedEl.querySelectorAll('.post').forEach(postEl=>{
+        const id=postEl.getAttribute('data-id');
+        postEl.querySelector('.btn-like').onclick=()=>toggleLike(id);
+        postEl.querySelector('.btn-comment').onclick=()=>toggleComments(id,postEl);
+        postEl.querySelector('.comment-form').onsubmit=(e)=>submitComment(e,id,postEl);
       });
     }
 
-    function attachFeedListener(){
-      if (unsubscribeFeed) unsubscribeFeed();
-      const q = query(collection(db, 'posts'), orderBy('ts','desc'));
-      unsubscribeFeed = onSnapshot(q, (snap)=>{ renderPosts(snap.docs); });
-    }
+    function attachFeedListener(){ if(unsubscribeFeed) unsubscribeFeed(); const q=query(collection(db,'posts'), orderBy('ts','desc')); unsubscribeFeed=onSnapshot(q,(snap)=>renderPosts(snap.docs)); }
+
+    async function fileToBytesOptional(file){ return file? new Uint8Array(await file.arrayBuffer()): null; }
 
     async function createPost({ text, imageFile }){
-      const me = auth.currentUser; if(!me) return;
-      let imageURL = '';
-      if (imageFile){
-        const key = `posts/${me.uid}/${crypto.randomUUID()}`;
-        const r = sRef(storage, key);
-        await uploadBytes(r, await fileToBytes(imageFile));
-        imageURL = await getDownloadURL(r);
-      }
-      await addDoc(collection(db, 'posts'), {
-        uid: me.uid,
-        userName: me.displayName || '사용자',
-        userPhoto: me.photoURL || '',
-        text: text.trim(),
-        imageURL,
-        ts: serverTimestamp(),
-        likes: []
-      });
+      const me=auth.currentUser; if(!me) return;
+      let imageURL='';
+      if(imageFile){ const r=sRef(storage,`posts/${me.uid}/${crypto.randomUUID()}`); await uploadBytes(r, await fileToBytesOptional(imageFile)); imageURL=await getDownloadURL(r); }
+      await addDoc(collection(db,'posts'), { uid:me.uid, userName:me.displayName||'사용자', userPhoto:me.photoURL||'', text:text.trim(), imageURL, ts:serverTimestamp(), likes:[] });
     }
 
-    async function toggleLike(postId){
-      const me = auth.currentUser; if(!me) return alert('로그인이 필요합니다.');
-      const ref = doc(db, 'posts', postId);
-      const snap = await getDoc(ref); if(!snap.exists()) return;
-      const likes = snap.data().likes || [];
-      await updateDoc(ref, { likes: likes.includes(me.uid) ? arrayRemove(me.uid) : arrayUnion(me.uid) });
-    }
+    async function toggleLike(postId){ const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const ref=doc(db,'posts',postId); const snap=await getDoc(ref); if(!snap.exists()) return; const likes=snap.data().likes||[]; await updateDoc(ref,{ likes: likes.includes(me.uid)? arrayRemove(me.uid): arrayUnion(me.uid) }); }
 
-    async function toggleComments(postId, postEl){
-      const list = postEl.querySelector('.comment-list');
-      const loaded = postEl.querySelector('.comments').getAttribute('data-loaded') === '1';
-      if (loaded){ list.parentElement.querySelector('.hint').textContent = '댓글 숨김 해제됨'; return; }
-      const commentsSnap = await getDocs(collection(db, 'posts', postId, 'comments'));
-      const items = commentsSnap.docs
-        .sort((a,b)=>{
-          const ta = a.data().ts?.toMillis?.() || 0; const tb = b.data().ts?.toMillis?.() || 0; return ta - tb; // oldest first
-        })
-        .map(d => {
-          const c = d.data();
-          const when = c.ts?.toDate?.() ? timeAgo(c.ts.toDate().getTime()) : '';
-          const who = c.userName || '사용자';
-          return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text || '')}</div>`;
-        }).join('');
-      list.innerHTML = items || '<div class="hint">아직 댓글이 없어요.</div>';
-      postEl.querySelector('.comments').setAttribute('data-loaded','1');
-      postEl.querySelector('.btn-comment').textContent = '💬 새로고침';
-    }
+    async function toggleComments(postId, postEl){ const list=postEl.querySelector('.comment-list'); const loaded=postEl.querySelector('.comments').getAttribute('data-loaded')==='1'; if(loaded){ list.parentElement.querySelector('.hint').textContent='댓글 새로고침'; } const commentsSnap=await getDocs(collection(db,'posts',postId,'comments')); const items=commentsSnap.docs.sort((a,b)=>{ const ta=a.data().ts?.toMillis?.()||0; const tb=b.data().ts?.toMillis?.()||0; return ta-tb; }).map(d=>{ const c=d.data(); const when=c.ts?.toDate?.()? timeAgo(c.ts.toDate().getTime()):''; const who=c.userName||'사용자'; return `<div class="comment"><b>${escapeHtml(who)}</b> <span class="hint">${when}</span><br/>${escapeHtml(c.text||'')}</div>`; }).join(''); list.innerHTML=items||'<div class="hint">아직 댓글이 없어요.</div>'; postEl.querySelector('.comments').setAttribute('data-loaded','1'); }
 
-    async function submitComment(e, postId, postEl){
-      e.preventDefault();
-      const me = auth.currentUser; if(!me) return alert('로그인이 필요합니다.');
-      const input = e.target.querySelector('input');
-      const text = input.value.trim(); if(!text) return;
-      await addDoc(collection(db,'posts',postId,'comments'), {
-        uid: me.uid,
-        userName: me.displayName || '사용자',
-        text,
-        ts: serverTimestamp()
-      });
-      input.value = '';
-      // 새 댓글 반영
-      toggleComments(postId, postEl);
-    }
+    async function submitComment(e, postId, postEl){ e.preventDefault(); const me=auth.currentUser; if(!me) return alert('로그인이 필요합니다.'); const input=e.target.querySelector('input'); const text=input.value.trim(); if(!text) return; await addDoc(collection(db,'posts',postId,'comments'), { uid:me.uid, userName:me.displayName||'사용자', text, ts:serverTimestamp() }); input.value=''; toggleComments(postId, postEl); }
 
-    // 새 글 작성 핸들러
-    $('#postForm').addEventListener('submit', async (e)=>{
-      e.preventDefault();
-      const text = $('#po_text').value; const imageFile = $('#po_img').files[0];
-      if (!text.trim()){ alert('내용을 입력하세요'); return; }
-      await createPost({ text, imageFile });
-      $('#po_text').value = ''; $('#po_img').value = '';
-      window.scrollTo({top:0, behavior:'smooth'});
-    });
-
-    // Firestore/Storage 규칙(참고용)
-    /*
-    // Firestore rules (개발용은 test mode OK, 배포 전 아래로 좁히기)
-    rules_version = '2';
-    service cloud.firestore {
-      match /databases/{database}/documents {
-        function signedIn() { return request.auth != null; }
-        match /users/{uid} {
-          allow read: if true;
-          allow write: if signedIn() && request.auth.uid == uid;
-        }
-        match /posts/{postId} {
-          allow read: if true;
-          allow create: if signedIn();
-          allow update, delete: if signedIn() && request.resource.data.uid == request.auth.uid;
-          match /comments/{commentId} {
-            allow read: if true;
-            allow create: if signedIn();
-          }
-        }
-      }
-    }
-
-    // Storage rules (개발용 public read, 배포 시 필요시 제한)
-    rules_version = '2';
-    service firebase.storage {
-      match /b/{bucket}/o {
-        match /{allPaths=**} {
-          allow read: if true;
-          allow write: if request.auth != null; // 로그인 사용자만 업로드
-        }
-      }
-    }
-    */
+    // 새 글 작성
+    $('#postForm').addEventListener('submit', async (e)=>{ e.preventDefault(); const text=$('#po_text').value; const imageFile=$('#po_img').files[0]; if(!text.trim()){ alert('내용을 입력하세요'); return; } await createPost({ text, imageFile }); $('#po_text').value=''; $('#po_img').value=''; window.scrollTo({top:0,behavior:'smooth'}); });
   </script>
 </body>
 </html>
-
